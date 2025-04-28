@@ -1,0 +1,78 @@
+I used Google Colab for Python coding capabilities using a CVS File. 
+-- Importing Libraries and Load Data---
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report, accuracy_score
+from sklearn.preprocessing import LabelEncoder
+
+# Load dataset
+df = pd.read_csv('/content/Customer_Churn_Dataset.csv')
+
+# Quick view of data
+df.head()
+
+---Data Pre-processing ---
+
+# Encode categorical variables
+le = LabelEncoder()
+df['Gender'] = le.fit_transform(df['Gender'])
+df['Region'] = le.fit_transform(df['Region'])
+df['Plan_Type'] = le.fit_transform(df['Plan_Type'])
+df['Churn_Status'] = df['Churn_Status'].map({'Yes': 1, 'No': 0})
+
+# Define features and target
+X = df[['Gender', 'Age', 'Region', 'Plan_Type', 'Tenure_Months', 'Monthly_Usage', 'Num_Complaints']]
+y = df['Churn_Status']
+
+# Split data
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+--- Build Logistic Regression Model ---
+# Initialize and train model
+model = LogisticRegression(max_iter=1000)
+model.fit(X_train, y_train)
+
+# Predict
+y_pred = model.predict(X_test)
+
+# Evaluate
+print("Accuracy:", accuracy_score(y_test, y_pred))
+print("\nClassification Report:\n", classification_report(y_test, y_pred))
+
+--- Predict Churn probabilities -- 
+# Get probabilities
+df['Churn_Probability'] = model.predict_proba(X)[:,1]
+
+# Categorize Risk Levels
+df['Churn_Risk_Level'] = pd.cut(df['Churn_Probability'], 
+                                bins=[0, 0.3, 0.6, 1], 
+                                labels=['Low', 'Medium', 'High'])
+
+# View updated data
+df[['Customer_ID', 'Churn_Probability', 'Churn_Risk_Level']].head()
+
+-- As I did not receive any customer in the High risk, I changed the probability levels -- 
+df['Churn_Risk_Level'] = pd.cut(df['Churn_Probability'],
+                                bins=[0, 0.2, 0.4, 1],
+                                labels=['Low', 'Medium', 'High']) 
+
+-- Making sure now I have the new list with high risk as well --
+df[['Customer_ID', 'Churn_Probability', 'Churn_Risk_Level']].head(10)
+
+--- Initial training the model and testing it --- 
+# Initialize and train model
+model = LogisticRegression(max_iter=1000)
+model.fit(X_train, y_train)
+
+# Predict on test data
+y_pred = model.predict(X_test)
+
+# Evaluate model performance
+print("Accuracy:", accuracy_score(y_test, y_pred))
+print("\nClassification Report:\n", classification_report(y_test, y_pred))
+
+# Save the dataset with predictions
+df.to_csv('/content/Customer_Churn_With_Risk.csv', index=False)
+
+Used this file for PowerBi dashboard along with the original to create interactive report.
